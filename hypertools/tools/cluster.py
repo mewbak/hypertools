@@ -1,30 +1,39 @@
 #!/usr/bin/env python
 import warnings
-from sklearn.cluster import KMeans, MiniBatchKMeans, AgglomerativeClustering, Birch, FeatureAgglomeration, SpectralClustering
+from sklearn.cluster import (
+    KMeans,
+    MiniBatchKMeans,
+    AgglomerativeClustering,
+    Birch,
+    FeatureAgglomeration,
+    SpectralClustering,
+)
 import numpy as np
 from .._shared.helpers import *
 from .format_data import format_data as formatter
 
 # dictionary of models
 models = {
-    'KMeans': KMeans,
-    'MiniBatchKMeans': MiniBatchKMeans,
-    'AgglomerativeClustering': AgglomerativeClustering,
-    'FeatureAgglomeration': FeatureAgglomeration,
-    'Birch': Birch,
-    'SpectralClustering': SpectralClustering,
+    "KMeans": KMeans,
+    "MiniBatchKMeans": MiniBatchKMeans,
+    "AgglomerativeClustering": AgglomerativeClustering,
+    "FeatureAgglomeration": FeatureAgglomeration,
+    "Birch": Birch,
+    "SpectralClustering": SpectralClustering,
 }
 
 try:
-    from hdbscan import HDBSCAN
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=SyntaxWarning, module="hdbscan")
+        from hdbscan import HDBSCAN
     _has_hdbscan = True
-    models.update({'HDBSCAN': HDBSCAN})
+    models.update({"HDBSCAN": HDBSCAN})
 except ImportError:
     _has_hdbscan = False
 
 
 @memoize
-def cluster(x, cluster='KMeans', n_clusters=3, ndims=None, format_data=True):
+def cluster(x, cluster="KMeans", n_clusters=3, ndims=None, format_data=True):
     """
     Performs clustering analysis and returns a list of cluster labels
 
@@ -63,13 +72,18 @@ def cluster(x, cluster='KMeans', n_clusters=3, ndims=None, format_data=True):
 
     if cluster == None:
         return x
-    elif (isinstance(cluster, str) and cluster=='HDBSCAN') or \
-    (isinstance(cluster, dict) and cluster['model']=='HDBSCAN'):
+    elif (isinstance(cluster, str) and cluster == "HDBSCAN") or (
+        isinstance(cluster, dict) and cluster["model"] == "HDBSCAN"
+    ):
         if not _has_hdbscan:
-            raise ImportError('HDBSCAN is not installed. Please install hdbscan>=0.8.11')
+            raise ImportError(
+                "HDBSCAN is not installed. Please install hdbscan>=0.8.11"
+            )
 
     if ndims != None:
-        warnings.warn('The ndims argument is now deprecated. Ignoring dimensionality reduction step.')
+        warnings.warn(
+            "The ndims argument is now deprecated. Ignoring dimensionality reduction step."
+        )
 
     if format_data:
         x = formatter(x, ppca=True)
@@ -77,17 +91,15 @@ def cluster(x, cluster='KMeans', n_clusters=3, ndims=None, format_data=True):
     # if reduce is a string, find the corresponding model
     if isinstance(cluster, str):
         model = models[cluster]
-        if cluster != 'HDBSCAN':
-            model_params = {
-                'n_clusters' : n_clusters
-            }
+        if cluster != "HDBSCAN":
+            model_params = {"n_clusters": n_clusters}
         else:
             model_params = {}
     # if its a dict, use custom params
     elif type(cluster) is dict:
-        if isinstance(cluster['model'], str):
-            model = models[cluster['model']]
-            model_params = cluster['params']
+        if isinstance(cluster["model"], str):
+            model = models[cluster["model"]]
+            model_params = cluster["params"]
 
     # initialize model
     model = model(**model_params)
