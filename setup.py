@@ -5,19 +5,19 @@ from setuptools import setup, find_packages
 
 os.environ["MPLCONFIGDIR"] = "."
 
-NAME = 'hypertools'
-VERSION = '0.8.1'
-AUTHOR = 'Contextual Dynamics Lab'
-AUTHOR_EMAIL = 'contextualdynamics@gmail.com'
-URL = 'https://github.com/ContextLab/hypertools'
+NAME = "hypertools"
+VERSION = "0.8.2"
+AUTHOR = "Contextual Dynamics Lab"
+AUTHOR_EMAIL = "contextualdynamics@gmail.com"
+URL = "https://github.com/ContextLab/hypertools"
 DOWNLOAD_URL = URL
-LICENSE = 'MIT'
-REQUIRES_PYTHON = '>=3.9'
-PACKAGES = find_packages(exclude=('images', 'examples', 'tests'))
-with open('requirements.txt', 'r') as f:
+LICENSE = "MIT"
+REQUIRES_PYTHON = ">=3.9"
+PACKAGES = find_packages(exclude=("images", "examples", "tests"))
+with open("requirements.txt", "r") as f:
     REQUIREMENTS = f.read().splitlines()
 
-DESCRIPTION = 'A python package for visualizing and manipulating high-dimensional data'
+DESCRIPTION = "A python package for visualizing and manipulating high-dimensional data"
 LONG_DESCRIPTION = """\
 HyperTools is a library for visualizing and manipulating high-dimensional data in Python. It is built on top of matplotlib (for plotting), seaborn (for plot styling), and scikit-learn (for data manipulation).
 
@@ -34,16 +34,16 @@ Some key features of HyperTools are:
 - Support for lists of Numpy arrays, Pandas dataframes, String, Geos or mixed lists.
 """
 CLASSIFIERS = [
-    'Intended Audience :: Science/Research',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Topic :: Scientific/Engineering :: Visualization',
-    'Topic :: Multimedia :: Graphics',
-    'Operating System :: POSIX',
-    'Operating System :: Unix',
-    'Operating System :: MacOS'
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Multimedia :: Graphics",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
 ]
 
 setup(
@@ -59,5 +59,5 @@ setup(
     python_requires=REQUIRES_PYTHON,
     packages=PACKAGES,
     install_requires=REQUIREMENTS,
-    classifiers=CLASSIFIERS
+    classifiers=CLASSIFIERS,
 )
