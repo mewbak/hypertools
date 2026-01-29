@@ -23,9 +23,8 @@ models = {
 }
 
 try:
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=SyntaxWarning, module="hdbscan")
-        from hdbscan import HDBSCAN
+    from hdbscan import HDBSCAN
+
     _has_hdbscan = True
     models.update({"HDBSCAN": HDBSCAN})
 except ImportError:

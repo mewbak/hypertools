@@ -2,7 +2,9 @@
 
 import warnings
 
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="hdbscan")
+warnings.filterwarnings(
+    "ignore", category=SyntaxWarning, message="invalid escape sequence"
+)
 
 from .config import __version__
 from .plot.plot import plot
