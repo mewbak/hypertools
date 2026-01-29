@@ -80,7 +80,6 @@ order to support the various possible combinations of new and older
 [2] https://github.com/ipython/ipython/issues/12190#issuecomment-599154335.
 """
 
-
 import inspect
 import os
 import shlex
@@ -102,16 +101,16 @@ from .._shared.exceptions import HypertoolsBackendError
 
 
 BACKEND_KEYS = {
-    'TkAgg': 'tk',
-    'GTK3Agg': ['gtk3', 'gtk'],
-    'WXAgg': 'wx',
-    'Qt4Agg': 'qt4',
-    'Qt5Agg': ['qt5', 'qt'],
-    'MacOSX': 'osx',
-    'nbAgg': ['notebook', 'nbagg'],
-    'module://ipykernel.pylab.backend_inline': 'inline',
-    'module://matplotlib_inline.backend_inline': 'inline',
-    'module://ipympl.backend_nbagg': ['ipympl', 'widget']
+    "TkAgg": "tk",
+    "GTK3Agg": ["gtk3", "gtk"],
+    "WXAgg": "wx",
+    "Qt4Agg": "qt4",
+    "Qt5Agg": ["qt5", "qt"],
+    "MacOSX": "osx",
+    "nbAgg": ["notebook", "nbagg"],
+    "module://ipykernel.pylab.backend_inline": "inline",
+    "module://matplotlib_inline.backend_inline": "inline",
+    "module://ipympl.backend_nbagg": ["ipympl", "widget"],
 }
 BACKEND_MAPPING = None
 BACKEND_WARNING = None
@@ -137,6 +136,7 @@ class ParrotDict(dict):
     Useful for filtering/replacing some values while leaving others
     when the to-be-replaced values are known in advance.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -166,6 +166,7 @@ class BackendMapping:
     either step, a key with no corresponding value returns the key (see
     `ParrotDict` docstring for more info).
     """
+
     def __init__(self, _dict):
         # assumes format of _dict is {Python: IPython}
         self.py_to_ipy = ParrotDict()
@@ -208,6 +209,7 @@ class HypertoolsBackend(str):
     scenario (and any of those functions could be changed at any time),
     this will hopefully be more stable long-term.
     """
+
     def __new__(cls, x):
         return super().__new__(cls, x)
 
@@ -239,6 +241,7 @@ class HypertoolsBackend(str):
         """
         # only deal with string attributes/methods here
         if hasattr(str, name):
+
             def _subclass_method(self, *args, **kwargs):
                 value = getattr(super(), name)(*args, **kwargs)
                 if isinstance(value, str):
@@ -333,13 +336,15 @@ def _block_greedy_completer_execution():
     [1] https://github.com/ipython/ipython/blob/2b4bc75ac735a2541125b3baf299504e5513994a/IPython/core/completerlib.py#L158
     """
     stack_trace = traceback.extract_stack()[-4::-1]
-    completer_module = 'IPython/core/completerlib.py'
+    completer_module = "IPython/core/completerlib.py"
     try:
-        next(entry for entry in stack_trace if entry.filename.endswith(completer_module))
+        next(
+            entry for entry in stack_trace if entry.filename.endswith(completer_module)
+        )
     except StopIteration:
         return
     else:
-        for module in ('hypertools.plot', 'hypertools.plot.backend', 'numpy'):
+        for module in ("hypertools.plot", "hypertools.plot.backend", "numpy"):
             try:
                 sys.modules.pop(module)
             except KeyError:
@@ -370,10 +375,11 @@ def _get_jupyter_frontend():
     # first try to inspect the shell command used to start the jupyter
     # notebook/lab server from the parent process (i.e., `jupyter
     # notebook ...` or `jupyter lab ...`)
-    shell_cmd = f'ps -o command= -p {os.getppid()}'
+    shell_cmd = f"ps -o command= -p {os.getppid()}"
     try:
-        parent_proc_cmd = check_output(shlex.split(shell_cmd),
-                                       encoding=getpreferredencoding())
+        parent_proc_cmd = check_output(
+            shlex.split(shell_cmd), encoding=getpreferredencoding()
+        )
     except (FileNotFoundError, CalledProcessError):
         # this could fail if the notebook is being run from something
         # like an IDE that manages more complex processes or doesn't
@@ -385,15 +391,15 @@ def _get_jupyter_frontend():
         # check more generally in case the user has something unusual
         # like a custom script they called to launch the server
         for item in parent_proc_cmd.split():
-            if item.endswith('lab'):
+            if item.endswith("lab"):
                 # if the server was launched with `jupyter lab`, we know
                 # we're using the JupyterLab frontend
-                return 'lab'
-            elif item.endswith('notebook'):
+                return "lab"
+            elif item.endswith("notebook"):
                 # if the server was launched with `jupyter notebook`, we
                 # need to check the version below to determine the
                 # frontend
-                server_type = 'notebook'
+                server_type = "notebook"
                 break
         else:
             # if we can't identify the server type (or `ps` command
@@ -411,25 +417,43 @@ def _get_jupyter_frontend():
     #
     # `IPython.utils.process.system()` prints output to stdout, so
     # temporarily capture it in a text buffer to get the version info.
-    import IPython    # guaranteed to be installed at this point
+    import IPython  # guaranteed to be installed at this point
 
     with redirect_stdout(StringIO()) as notebook_version_stdout:
-        retcode = IPython.utils.process.system('jupyter notebook --version')
+        retcode = IPython.utils.process.system("jupyter notebook --version")
     if retcode == 0:
         # base notebook app is installed in the server environment
         notebook_version_stdout = notebook_version_stdout.getvalue().strip()
-        notebook_version_tup = tuple(map(int, notebook_version_stdout.split('.')))
-        if notebook_version_tup >= (7, 0):
+        try:
+            # Handle potential multi-line output by taking the first line
+            version_line = notebook_version_stdout.split("\n")[0].strip()
+            # Only take version numbers (e.g., "7.0.0" from "7.0.0-rc1")
+            version_parts = version_line.split(".")
+            notebook_version_tup = tuple(
+                int(
+                    p.split("-")[0]
+                    .split("+")[0]
+                    .split("a")[0]
+                    .split("b")[0]
+                    .split("rc")[0]
+                )
+                for p in version_parts[:3]
+            )
+        except (ValueError, IndexError):
+            # If version parsing fails (e.g., unexpected output format like
+            # a path instead of version), treat as if notebook is not installed
+            notebook_version_tup = None
+        if notebook_version_tup is not None and notebook_version_tup >= (7, 0):
             # notebook >= 7.0 uses the JupyterLab frontend, so no matter
             # how the notebook and/or jupyter server were launched, or
             # whether or not JupyterLab itself is installed, we can
             # assume that's the frontend being used
-            return 'lab'
-        elif server_type == 'notebook':
+            return "lab"
+        elif server_type == "notebook":
             # notebook < 7.0 uses the classic notebook frontend, so if
             # the server was launched by invoking `jupyter notebook`
             # directly, we know that's what we're using
-            return 'classic'
+            return "classic"
     else:
         # base notebook app is not installed in the server environment.
         notebook_version_tup = None
@@ -448,22 +472,22 @@ def _get_jupyter_frontend():
     # the frontend being used is ambiguous, but our "best guess"
     # depends on whether or not JupyterLab is installed.
     with redirect_stdout(StringIO()) as lab_version_stdout:
-        retcode = IPython.utils.process.system('jupyter lab --version')
+        retcode = IPython.utils.process.system("jupyter lab --version")
     if retcode == 0:
         # JupyterLab is installed in the server environment, possibly
         # alongside an older version of the base notebook app. Notebook
         # could be running in an IDE or atypical web app. Either way,
         # JupyterLab frontend is more likely being used.
-        return 'lab'
+        return "lab"
     elif notebook_version_tup is not None:
         # JupyterLab is not installed, but an older version of the base
         # notebook app is, so assume the classic notebook frontend
-        return 'classic'
+        return "classic"
     # neither JupyterLab nor the base notebook app are installed. The
     # notebook is most likely being run through some app that doesn't
     # require a jupyter server. Fall back default assumption/old
     # behavior of assuming (probably mocked) classic notebook frontend.
-    return 'classic'
+    return "classic"
 
 
 def _init_backend():
@@ -471,7 +495,8 @@ def _init_backend():
     Runs when hypertools is initially imported and sets the matplotlib
     backend used for animated/interactive plots.
     """
-    global BACKEND_MAPPING, \
+    global \
+        BACKEND_MAPPING, \
         BACKEND_WARNING, \
         HYPERTOOLS_BACKEND, \
         IPYTHON_INSTANCE, \
@@ -486,7 +511,7 @@ def _init_backend():
         # `hypertools` was imported from an IPython shell or Jupyter
         # notebook
         IPYTHON_INSTANCE = get_ipython()
-        assert 'IPKernelApp' in IPYTHON_INSTANCE.config
+        assert "IPKernelApp" in IPYTHON_INSTANCE.config
 
     # NameError: raised if imported from a script
     # AssertionError: raised if imported from an IPython shell
@@ -497,19 +522,19 @@ def _init_backend():
         IS_NOTEBOOK = False
         # (excluding WebAgg - no way to test in advance if it will work)
         backends = (
-            'TkAgg',
-            'QtAgg',
-            'Qt5Agg',
-            'Qt4Agg',
-            'GTK4Agg',
-            'GTK3Agg',
-            'TkAgg',
-            'WXAgg'
+            "TkAgg",
+            "QtAgg",
+            "Qt5Agg",
+            "Qt4Agg",
+            "GTK4Agg",
+            "GTK3Agg",
+            "TkAgg",
+            "WXAgg",
         )
-        if sys.platform == 'darwin':
+        if sys.platform == "darwin":
             # prefer cocoa backend on Mac - pretty much guaranteed to
             # work, appears to be faster, and Mac does NOT like Tkinter
-            backends = ('MacOSX', *backends)
+            backends = ("MacOSX", *backends)
 
         # TODO: document setting environment variable
         # check for configurable environment variable
@@ -517,8 +542,10 @@ def _init_backend():
         if env_backend is not None:
             # prefer user-specified backend, if set
             if env_backend.lower() in tuple(map(str.lower, backends)):
-                backends = (backends[:backends.index(HYPERTOOLS_BACKEND)],
-                            *backends[backends.index(HYPERTOOLS_BACKEND) + 1:])
+                backends = (
+                    backends[: backends.index(HYPERTOOLS_BACKEND)],
+                    *backends[backends.index(HYPERTOOLS_BACKEND) + 1 :],
+                )
 
             backends = (env_backend, *backends)
 
@@ -537,23 +564,28 @@ def _init_backend():
                 continue
 
         else:
-            BACKEND_WARNING = ("Failed to switch to any interactive backend "
-                               f"({', '.join(backends)}). Falling back to 'Agg'.")
-            working_backend = 'Agg'
+            BACKEND_WARNING = (
+                "Failed to switch to any interactive backend "
+                f"({', '.join(backends)}). Falling back to 'Agg'."
+            )
+            working_backend = "Agg"
 
         if env_backend is not None and working_backend.lower() != env_backend.lower():
             # The only time a plotting-related warning should be issued
             # on import rather than on call to hypertools.plot is if
             # $HYPERTOOLS_BACKEND specifies an incompatible backend,
             # since that will have been set manually.
-            warnings.warn("failed to set matplotlib backend to backend "
-                          f"specified in environment ('{env_backend}'). "
-                          f"Falling back to '{working_backend}'")
+            warnings.warn(
+                "failed to set matplotlib backend to backend "
+                f"specified in environment ('{env_backend}'). "
+                f"Falling back to '{working_backend}'"
+            )
 
         switch_backend = reset_backend = _switch_backend_regular
 
     else:
         IS_NOTEBOOK = True
+        working_backend = "inline"
         # if running in a notebook, the backend to use depends on the
         # user's Jupyter version and frontend. In "classic" Jupyter
         # notebooks (i.e., notebook < 7.0), use `nbAgg` since it's the
@@ -578,10 +610,10 @@ def _init_backend():
         # same. The former is guaranteed by hypertools's dependencies,
         # but the latter is not, so we must check for it manually.
         notebook_frontend = _get_jupyter_frontend()
-        if notebook_frontend == 'lab':
-            notebook_backend = 'module://ipympl.backend_nbagg'
+        if notebook_frontend == "lab":
+            notebook_backend = "module://ipympl.backend_nbagg"
         else:
-            notebook_backend = 'nbAgg'
+            notebook_backend = "nbAgg"
 
         try:
             mpl.use(notebook_backend)
@@ -590,24 +622,24 @@ def _init_backend():
                 "Failed to switch to interactive notebook backend "
                 f"('{notebook_backend}'). Falling back to inline static plots."
             )
-            working_backend = 'inline'
+            working_backend = "inline"
         else:
             working_backend = notebook_backend
-            if notebook_frontend == 'lab':
+            if notebook_frontend == "lab":
                 # if the notebook uses the JupyterLab JS frontend and
                 # the ipympl plotting backend was successfully found in
                 # the notebook kernel environment (`try` block above),
                 # determine whether the notebook server environment is
                 # the same or different
                 kernel_python = sys.executable
-                server_python = shutil.which('python')
+                server_python = shutil.which("python")
                 if server_python != kernel_python:
                     # if they're different, check whether `ipympl` is
                     # installed in the server environment
-                    import IPython    # guaranteed to be installed at this point
+                    import IPython  # guaranteed to be installed at this point
 
-                    with open(os.devnull, 'w') as devnull, redirect_stdout(devnull):
-                        retcode = IPython.utils.process.system('pip show ipympl')
+                    with open(os.devnull, "w") as devnull, redirect_stdout(devnull):
+                        retcode = IPython.utils.process.system("pip show ipympl")
                     if retcode != 0:
                         # NOTE: this is not currently checked, but the
                         #  `ipympl` versions installed in the server and
@@ -675,12 +707,16 @@ def _switch_backend_regular(backend):
         plt.switch_backend(backend)
     except Exception as e:
         if isinstance(e, (ImportError, ModuleNotFoundError)):
-            err_msg = (f"Failed to switch the plotting backend to "
-                       f"{backend}. You may be missing required dependencies, "
-                       "or this backend may not be available for your system")
+            err_msg = (
+                f"Failed to switch the plotting backend to "
+                f"{backend}. You may be missing required dependencies, "
+                "or this backend may not be available for your system"
+            )
         else:
-            err_msg = ("An unexpected error occurred while trying to switch "
-                       f"the plotting backend to {backend}")
+            err_msg = (
+                "An unexpected error occurred while trying to switch "
+                f"the plotting backend to {backend}"
+            )
 
         raise HypertoolsBackendError(err_msg) from e
 
@@ -733,7 +769,7 @@ def _switch_backend_notebook(backend):
     try:
         from matplotlib_inline.backend_inline import flush_figures
     except (ImportError, ModuleNotFoundError):
-       from ipykernel.pylab.backend_inline import flush_figures
+        from ipykernel.pylab.backend_inline import flush_figures
 
     backend = backend.as_ipython()
     tmp_stdout = StringIO()
@@ -741,10 +777,10 @@ def _switch_backend_notebook(backend):
 
     with redirect_stdout(tmp_stdout):
         try:
-            IPYTHON_INSTANCE.run_line_magic('matplotlib', backend)
+            IPYTHON_INSTANCE.run_line_magic("matplotlib", backend)
         except KeyError as e:
             exc = e
-            IPYTHON_INSTANCE.run_line_magic('matplotlib', '-l')
+            IPYTHON_INSTANCE.run_line_magic("matplotlib", "-l")
 
     output_msg = tmp_stdout.getvalue().strip()
     tmp_stdout.close()
@@ -752,22 +788,25 @@ def _switch_backend_notebook(backend):
         # just in case something else was somehow sent to stdout while
         # redirected, or if we managed to catch a different KeyError
         backends_avail = output_msg.splitlines()[-1]
-        raise ValueError(f"{backend} is not a valid IPython plotting "
-                         f"backend.\n{backends_avail}") from exc
+        raise ValueError(
+            f"{backend} is not a valid IPython plotting backend.\n{backends_avail}"
+        ) from exc
 
-    elif output_msg.startswith('Warning: Cannot change to a different GUI toolkit'):
+    elif output_msg.startswith("Warning: Cannot change to a different GUI toolkit"):
         try:
             _switch_backend_regular(backend)
         except HypertoolsBackendError as e:
-            err_msg = (f'Failed to switch plotting backend to "{backend}" via '
-                       f"IPython with the following message:\n\t{output_msg}\n\n"
-                       f"Fell back to switching via matplotlib and failed with "
-                       f"the above error")
+            err_msg = (
+                f'Failed to switch plotting backend to "{backend}" via '
+                f"IPython with the following message:\n\t{output_msg}\n\n"
+                f"Fell back to switching via matplotlib and failed with "
+                f"the above error"
+            )
             raise HypertoolsBackendError(err_msg) from e
 
-    if backend != 'inline':
-        while flush_figures in IPYTHON_INSTANCE.events.callbacks['post_execute']:
-            IPYTHON_INSTANCE.events.unregister('post_execute', flush_figures)
+    if backend != "inline":
+        while flush_figures in IPYTHON_INSTANCE.events.callbacks["post_execute"]:
+            IPYTHON_INSTANCE.events.unregister("post_execute", flush_figures)
 
 
 def _reset_backend_notebook(backend):
@@ -829,19 +868,20 @@ def _reset_backend_notebook(backend):
        than by object, since the inner `_deferred_reset_cb` function is
        re-defined as a different object each time.
     """
+
     def _deferred_reset_cb(*args):
         _switch_backend_notebook(backend)
-        IPYTHON_INSTANCE.events.unregister('pre_run_cell', _deferred_reset_cb)
+        IPYTHON_INSTANCE.events.unregister("pre_run_cell", _deferred_reset_cb)
 
     def _reset_cb_registered():
-        for func in IPYTHON_INSTANCE.events.callbacks['pre_run_cell']:
-            if func.__name__ == '_deferred_reset_cb':
+        for func in IPYTHON_INSTANCE.events.callbacks["pre_run_cell"]:
+            if func.__name__ == "_deferred_reset_cb":
                 return True
         return False
 
     backend = backend.as_ipython()
     if not _reset_cb_registered():
-        IPYTHON_INSTANCE.events.register('pre_run_cell', _deferred_reset_cb)
+        IPYTHON_INSTANCE.events.register("pre_run_cell", _deferred_reset_cb)
 
 
 def _get_runtime_args(func, *func_args, **func_kwargs):
@@ -961,13 +1001,16 @@ class set_interactive_backend:
        which would be much less efficient. So for now, the current setup
        is probably good enough.
     """
+
     def __init__(self, backend):
         global BACKEND_WARNING, HYPERTOOLS_BACKEND
 
         self.old_interactive_backend = HYPERTOOLS_BACKEND.normalize()
         self.old_backend_warning = BACKEND_WARNING
         self.new_interactive_backend = HypertoolsBackend(backend).normalize()
-        self.new_is_different = self.new_interactive_backend != self.old_interactive_backend
+        self.new_is_different = (
+            self.new_interactive_backend != self.old_interactive_backend
+        )
         self.backend_switched = False
 
         if self.new_is_different:
@@ -1042,6 +1085,7 @@ def manage_backend(plot_func):
        & duplicate calls when the decorated call to `hypertools.plot`
        happens inside the `hypertools.set_interactive_backend` context.
     """
+
     @wraps(plot_func)
     def plot_wrapper(*args, **kwargs):
         # record current rcParams
@@ -1052,13 +1096,13 @@ def manage_backend(plot_func):
 
         if not IN_SET_CONTEXT:
             plot_kwargs = _get_runtime_args(plot_func, *args, **kwargs)
-            if plot_kwargs.get('animate') or plot_kwargs.get('interactive'):
+            if plot_kwargs.get("animate") or plot_kwargs.get("interactive"):
                 curr_backend = HypertoolsBackend(mpl.get_backend()).normalize()
-                tmp_backend = plot_kwargs.get('mpl_backend')
-                if tmp_backend == 'auto':
+                tmp_backend = plot_kwargs.get("mpl_backend")
+                if tmp_backend == "auto":
                     tmp_backend = HYPERTOOLS_BACKEND.normalize()
 
-                if tmp_backend not in ('disable', curr_backend):
+                if tmp_backend not in ("disable", curr_backend):
                     # if all conditions are met, use the real context
                     backend_context = set_interactive_backend
 
@@ -1075,7 +1119,7 @@ def manage_backend(plot_func):
                 # if the matplotlibrc was cached from <=v3.3.0, a TON of
                 # (harmless as of v3.2.0) MatplotlibDeprecationWarnings
                 # about `axes.Axes3D`-related rcParams fields are issued
-                warnings.simplefilter('ignore', mpl.MatplotlibDeprecationWarning)
+                warnings.simplefilter("ignore", mpl.MatplotlibDeprecationWarning)
                 mpl.rcParams.update(**old_rcParams)
 
     return plot_wrapper

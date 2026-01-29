@@ -60,11 +60,15 @@ jobs:
         pip install -e .
         
     - name: Run pytest
+      env:
+        MPLBACKEND: Agg
       run: |
         pytest -v --tb=short
         
     - name: Run pytest with coverage (Ubuntu Python 3.12 only)
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      env:
+        MPLBACKEND: Agg
       run: |
         pytest --cov=hypertools --cov-report=xml --cov-report=term-missing
         
